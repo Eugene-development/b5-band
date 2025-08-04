@@ -1,16 +1,6 @@
 <script>
 	import { login, auth } from '$lib/state/auth.svelte.js';
-	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
 	import LoadingOverlay from '$lib/components/LoadingOverlay.svelte';
-
-	// Get redirectTo parameter from URL
-	let redirectTo = $derived.by(() => {
-		const redirect = page.url.searchParams.get('redirectTo') || '/dashboard';
-		console.log('🎯 RedirectTo calculated:', redirect);
-		return redirect;
-	});
 
 	// Form state using Svelte 5 runes
 	let formData = $state({
@@ -28,14 +18,6 @@
 
 	// Loading state
 	let isLoading = $state(false);
-
-	// Redirect if already authenticated
-	$effect(() => {
-		if (auth.isAuthenticated) {
-			console.log('👤 User already authenticated, redirecting to dashboard');
-			goto('/dashboard');
-		}
-	});
 
 	/**
 	 * Handle form submission
@@ -78,21 +60,8 @@
 					token: auth.token
 				});
 
-				// Increased delay for state synchronization
-				await new Promise((resolve) => setTimeout(resolve, 300));
-
-				console.log('🔄 Final auth state before redirect:', {
-					isAuthenticated: auth.isAuthenticated,
-					emailVerified: auth.emailVerified,
-					redirectTo: redirectTo
-				});
-
-				// Manually redirect after successful login
-				console.log('✅ Login completed, initiating redirect');
-
-				// Use replace instead of push to avoid adding to history
-				console.log('🎯 Redirecting to:', redirectTo);
-				goto(redirectTo, { replaceState: true });
+				// Layout will handle the redirect automatically
+				console.log('✅ Login completed, Layout will handle redirect');
 			} else {
 				console.log('❌ Login failed:', auth.error);
 				errors.general = auth.error || 'Ошибка авторизации';
