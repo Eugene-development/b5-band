@@ -4,7 +4,8 @@
  */
 
 // API Base URL from environment or default
-export const API_BASE_URL = 'https://auth.bonus5.ru';
+export const API_BASE_URL = 'http://localhost:8000';
+// export const API_BASE_URL = 'https://auth.bonus5.ru';
 
 /**
  * API Configuration object
@@ -26,7 +27,10 @@ export const API_CONFIG = {
 		verifyEmail: '/api/email/verify',
 
 		// Client data submission
-		submitClientData: '/api/client-data'
+		submitClientData: '/api/client-data',
+
+		// Public project submission
+		publicProjectSubmit: '/api/projects/public-submit'
 	},
 
 	// Default headers for API requests

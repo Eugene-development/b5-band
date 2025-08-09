@@ -1,6 +1,7 @@
 <script>
 	// import { goto } from '$app/navigation';
 	// import { auth } from '$lib/state/auth.svelte.js';
+	import { publicSubmit } from '$lib/api/projects.js';
 
 	// Simple redirect based on auth state
 	// $effect(() => {
@@ -14,11 +15,53 @@
 	// });
 
 	// State and handler for ULID input (Secret Key)
-	let secretKeyInput = '';
+	let secretKeyInput = $state('');
+	let loading = $state(false);
+	let successMessage = $state('');
+	let errorMessage = $state('');
+
 	function handleSecretKeyInput(event) {
 		const rawValue = String(event.target.value || '');
 		const upperSanitized = rawValue.toUpperCase().replace(/[^0-9A-HJKMNP-TV-Z]/g, ''); // Crockford Base32 without I, L, O, U
 		secretKeyInput = upperSanitized.slice(0, 26);
+	}
+
+	async function handleSubmit(event) {
+		event.preventDefault();
+		successMessage = '';
+		errorMessage = '';
+
+		// Client-side ULID validation to avoid native pattern popups
+		const ulidPattern = /^[0-9A-HJKMNP-TV-Z]{26}$/;
+		if (!ulidPattern.test(secretKeyInput)) {
+			errorMessage = 'Введите секретный ключ из 26 символов (ULID, латиница/цифры без I, L, O, U)';
+			return;
+		}
+
+		loading = true;
+
+		const form = event.currentTarget;
+		const formData = new FormData(form);
+
+		const payload = {
+			secretKey: secretKeyInput,
+			clientName: String(formData.get('client_name') || '').trim(),
+			city: String(formData.get('city') || '').trim(),
+			phone: String(formData.get('phone') || '').trim(),
+			interest: String(formData.get('interest') || '').trim()
+		};
+
+		const result = await publicSubmit(payload);
+
+		if (result.success) {
+			successMessage = result.message || 'Данные успешно отправлены';
+			form.reset();
+			secretKeyInput = '';
+		} else {
+			errorMessage = result.message || 'Ошибка отправки данных';
+		}
+
+		loading = false;
 	}
 </script>
 
@@ -38,7 +81,16 @@
 		>
 			<h2 class="mb-6 text-2xl font-bold text-white">Заполните данные</h2>
 
-			<form method="post" action="#">
+			{#if successMessage}
+				<p class="mb-4 rounded-md bg-green-500/10 px-3 py-2 text-sm text-green-300">
+					{successMessage}
+				</p>
+			{/if}
+			{#if errorMessage}
+				<p class="mb-4 rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-300">{errorMessage}</p>
+			{/if}
+
+			<form onsubmit={handleSubmit} novalidate>
 				<div class="mb-4">
 					<label class="block text-sm font-medium text-gray-300" for="secret_key"
 						>Секретный ключ</label
@@ -49,7 +101,7 @@
 						name="secret_key"
 						id="secret_key"
 						bind:value={secretKeyInput}
-						on:input={handleSecretKeyInput}
+						oninput={handleSecretKeyInput}
 						pattern="^[0-9A-HJKMNP-TV-Z]{26}$"
 						minlength="26"
 						maxlength="26"
@@ -112,10 +164,12 @@
 
 				<div class="flex justify-end">
 					<button
-						class="rounded-md bg-gradient-to-r from-purple-600 via-purple-400 to-blue-500 px-4 py-2 font-bold text-white hover:opacity-80"
+						class="rounded-md bg-gradient-to-r from-purple-600 via-purple-400 to-blue-500 px-4 py-2 font-bold text-white hover:opacity-80 disabled:opacity-50"
 						type="submit"
+						disabled={loading}
 					>
-						Отправить
+						{#if loading}Отправка...{/if}
+						{#if !loading}Отправить{/if}
 					</button>
 				</div>
 			</form>
